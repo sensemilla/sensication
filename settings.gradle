@@ -1,2 +1,12 @@
-include ':libvlc'
+include ':libvlc', ':slidinglayerlib', ':draggablepanel', ':duckduckgolib', ':caffeine',
+        ':libnetcipher', ':taskslib', ':xabberlib', ':otr4j', ':slideuplib', ':arcmenulib'
+project(':otr4j').projectDir = new File('xabberlib/otr4j')
+project(':libnetcipher').projectDir = new File('duckduckgolib/libs/OnionKit/libnetcipher')
+
+include ':android-support-v4-preferencefragment'
+project(':android-support-v4-preferencefragment').projectDir = new File('duckduckgolib/libs/android-support-v4-preferencefragment')
+include ':resideMenulib'
+include ':appcompat'
+project(':appcompat').projectDir = new File('duckduckgolib/libs/appcompat')
+
 include ':vlc-android'

@@ -47,6 +47,8 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+ANDROID_NDK="/Users/sensemilla/ndk"
+ANDROID_SDK="/Users/sensemilla/sdk"
 if [ -z "$ANDROID_NDK" -o -z "$ANDROID_SDK" ]; then
    echo "You must define ANDROID_NDK, ANDROID_SDK before starting."
    echo "They must point to your NDK and SDK directories.\n"

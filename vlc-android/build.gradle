@@ -1,8 +1,11 @@
 apply plugin: 'com.android.application'
+apply from: "${rootDir}/android_common.gradle"
+apply plugin: 'com.neenbedankt.android-apt'
 
 android {
-    compileSdkVersion rootProject.ext.compileSdkVersion
-    buildToolsVersion rootProject.ext.buildToolsVersion
+    compileSdkVersion parent.ext.androidCompileSdkVersion
+    buildToolsVersion parent.ext.androidBuildToolsVersion
+
 
     flavorDimensions "target", "abi"
 
@@ -12,11 +15,23 @@ android {
     }
 
     defaultConfig {
-        applicationId "org.videolan.vlc"
+        minSdkVersion parent.ext.androidMinSdkVersion
+        targetSdkVersion parent.ext.androidTargetSdkVersion
+
+        applicationId "org.sense.vlc"
 
         resValue "string", "build_time", buildTime()
         resValue "string", "build_host", hostName()
         resValue "string", "build_revision", revision()
+
+        multiDexEnabled true
+
+        packagingOptions {
+            exclude 'META-INF/LICENSE.txt'
+            exclude 'META-INF/services/javax.annotation.processing.Processor'
+            exclude 'META-INF/NOTICE.txt'
+            exclude 'META-INF/jdom-info.xml'
+        }
 
         //Set the build ABI according to build types only if not launched from compile.sh
         if (System.getenv('PASSWORD_KEYSTORE') == null)
@@ -91,7 +106,7 @@ android {
             buildConfigField "boolean", "tv", "true"
         }
         chrome {
-            minSdkVersion 19
+            minSdkVersion 21
             dimension "target"
             versionCode = 2
             buildConfigField "boolean", "tv", "false"
@@ -128,10 +143,10 @@ android {
             dimension "abi"
             versionCode = 8
         }
-        MIPS64 {
-            dimension "abi"
-            versionCode = 9
-        }
+      //todo  MIPS64 {
+        //    dimension "abi"
+        //    versionCode = 9
+      //  }
     }
 
     // make per-variant version code
@@ -180,13 +195,26 @@ android {
 }
 
 dependencies {
-    compile project(':libvlc')
-    compile 'com.android.support:appcompat-v7:22.2.0'
-    compile 'com.android.support:cardview-v7:22.2.0'
-    compile 'com.android.support:recyclerview-v7:22.2.0'
+   // testCompile 'junit:junit:4.12'
+
+    compile parent.ext.libDaggerCompiler
+    compile parent.ext.libDagger
+    compile parent.ext.libAppCompat
+    compile parent.ext.libAnnotations
+    compile parent.ext.libV4support
+    compile parent.ext.libnineoldandroids
+    compile parent.ext.libRecyclerView
+    compile parent.ext.libCardView
+    compile parent.ext.libvlc
+    compile parent.ext.libduckduckgo
+    compile parent.ext.libresideMenu
+    compile parent.ext.libcaffeine
+
+    // compile parent.ext.libcaffeine
     compile 'com.android.support:design:22.2.0'
-    tvCompile 'com.android.support:leanback-v17:22.2.0'
-    testCompile 'junit:junit:4.12'
+
+    tvCompile 'com.android.support:leanback-v17:22.1.1'
+
 }
 
 def buildTime() {
@@ -204,4 +232,36 @@ def revision() {
         standardOutput = code
     }
     return code.toString()
+}
+
+
+apply plugin: 'maven'
+group = 'org.sensi'
+version = '0.1'
+
+archivesBaseName = 'sensicationvlcmainlibrary'
+
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository url: 'file://' + new File(System.getProperty('user.home'), '.m2/repository').absolutePath
+        }
+    }
+}
+task install(dependsOn: uploadArchives)
+
+//...
+//...
+task ressourcesJar(type: Jar) {
+    classifier = 'res'
+    from android.sourceSets.main.res.sourceFiles
+}
+task javasourcesJar(type: Jar) {
+    classifier = 'java'
+    from android.sourceSets.main.java.sourceFiles
+}
+artifacts {
+    archives ressourcesJar
+    archives javasourcesJar
 }

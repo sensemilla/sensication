@@ -42,5 +42,5 @@
             android:layout_height="fill_parent" />
     </com.android.widget.SlidingPaneLayout>
 
-    <include layout="@layout/toolbar"/>
+    <include layout="@layout/vlctoolbar"/>
 </FrameLayout>

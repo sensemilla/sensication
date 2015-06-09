@@ -27,7 +27,6 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 
 import org.videolan.vlc.MediaLibrary;
 import org.videolan.vlc.MediaWrapper;
@@ -57,7 +56,7 @@ public class SecondaryActivity extends AudioPlayerContainerActivity {
     Fragment mFragment;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.secondary);
 
@@ -78,13 +77,13 @@ public class SecondaryActivity extends AudioPlayerContainerActivity {
     }
 
     @Override
-    protected void onResume() {
+    public void onResume() {
         overridePendingTransition(0,0);
         super.onResume();
     }
 
     @Override
-    protected void onPause() {
+    public void onPause() {
         if (isFinishing())
             overridePendingTransition(0, 0);
         super.onPause();

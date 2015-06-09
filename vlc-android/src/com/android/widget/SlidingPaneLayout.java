@@ -75,7 +75,7 @@ public class SlidingPaneLayout extends ViewGroup {
     private int mCoveredFadeColor;
 
     /**
-     * Drawable used to draw the shadow between panes.
+     * Drawable used to draw the shadowresmenu between panes.
      */
     private Drawable mShadowDrawable;
 
@@ -723,17 +723,17 @@ public class SlidingPaneLayout extends ViewGroup {
     }
 
     /**
-     * Set a drawable to use as a shadow cast by the right pane onto the left pane
+     * Set a drawable to use as a shadowresmenu cast by the right pane onto the left pane
      * during opening/closing.
      *
-     * @param d drawable to use as a shadow
+     * @param d drawable to use as a shadowresmenu
      */
     public void setShadowDrawable(Drawable d) {
         mShadowDrawable = d;
     }
 
     /**
-     * Set a drawable to use as a shadow cast by the right pane onto the left pane
+     * Set a drawable to use as a shadowresmenu cast by the right pane onto the left pane
      * during opening/closing.
      *
      * @param resId Resource ID of a drawable to use
@@ -748,7 +748,7 @@ public class SlidingPaneLayout extends ViewGroup {
 
         final View shadowView = getChildCount() > 1 ? getChildAt(1) : null;
         if (shadowView == null || mShadowDrawable == null) {
-            // No need to draw a shadow if we don't have one.
+            // No need to draw a shadowresmenu if we don't have one.
             return;
         }
 

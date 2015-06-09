@@ -21,13 +21,16 @@
 package org.videolan.vlc.gui;
 
 import android.annotation.TargetApi;
+import android.app.Dialog;
 import android.app.SearchManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -41,7 +44,9 @@ import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -49,13 +54,64 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.webkit.WebView;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.FilterQueryProvider;
+import android.widget.FrameLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.google.api.services.youtube.model.SearchListResponse;
+import com.google.api.services.youtube.model.SearchResult;
+import com.percolate.caffeine.StringSplitCombine;
+import com.percolate.service.ServiceManager;
+import com.percolate.service.SystemOverlayMenuServiceMainActivity;
+import com.percolate.youtube.support.http.Search;
+import com.percolate.youtube.support.player.UrlParser;
+import com.percolate.youtube.ui.search.SearchResultAdapter;
+import com.squareup.otto.Bus;
+import com.squareup.otto.Subscribe;
+
+import org.sense.duckduckgo.DDGApplication;
+import org.sense.duckduckgo.events.AutoCompleteResultClickEvent;
+import org.sense.duckduckgo.events.ConfirmDialogOkEvent;
+import org.sense.duckduckgo.events.DisplayHomeScreenEvent;
+import org.sense.duckduckgo.events.DisplayScreenEvent;
+import org.sense.duckduckgo.events.HistoryItemLongClickEvent;
+import org.sense.duckduckgo.events.HistoryItemSelectedEvent;
+import org.sense.duckduckgo.events.ReloadEvent;
+import org.sense.duckduckgo.events.RemoveWebFragmentEvent;
+import org.sense.duckduckgo.events.RequestOpenWebPageEvent;
+import org.sense.duckduckgo.events.RequestSyncAdaptersEvent;
+import org.sense.duckduckgo.events.StopActionEvent;
+import org.sense.duckduckgo.events.WebViewEvents.WebViewBackPressActionEvent;
+import org.sense.duckduckgo.events.WebViewEvents.WebViewItemMenuClickEvent;
+import org.sense.duckduckgo.events.deleteEvents.DeleteStoryInHistoryEvent;
+import org.sense.duckduckgo.events.deleteEvents.DeleteUrlInHistoryEvent;
+import org.sense.duckduckgo.events.externalEvents.SearchExternalEvent;
+import org.sense.duckduckgo.events.externalEvents.SendToExternalBrowserEvent;
+import org.sense.duckduckgo.events.feedEvents.MainFeedItemLongClickEvent;
+import org.sense.duckduckgo.events.feedEvents.SavedFeedItemLongClickEvent;
+import org.sense.duckduckgo.events.pasteEvents.RecentSearchPasteEvent;
+import org.sense.duckduckgo.events.pasteEvents.SuggestionPasteEvent;
+import org.sense.duckduckgo.events.saveEvents.SaveSearchEvent;
+import org.sense.duckduckgo.events.saveEvents.SaveStoryEvent;
+import org.sense.duckduckgo.events.saveEvents.UnSaveSearchEvent;
+import org.sense.duckduckgo.events.saveEvents.UnSaveStoryEvent;
+import org.sense.duckduckgo.events.savedSearchEvents.SavedSearchItemLongClickEvent;
+import org.sense.duckduckgo.events.savedSearchEvents.SavedSearchItemSelectedEvent;
+import org.sense.duckduckgo.events.searchBarEvents.SearchBarChangeEvent;
+import org.sense.duckduckgo.events.searchBarEvents.SearchBarClearEvent;
+import org.sense.duckduckgo.events.searchBarEvents.SearchBarSetProgressEvent;
+import org.sense.duckduckgo.events.searchBarEvents.SearchBarSetTextEvent;
+import org.sense.duckduckgo.events.shareEvents.ShareFeedEvent;
+import org.sense.duckduckgo.events.shareEvents.ShareSearchEvent;
+import org.sense.duckduckgo.events.shareEvents.ShareWebPageEvent;
+import org.sense.duckduckgo.views.SlidingTabLayout;
+import org.sense.duckduckgo.views.webview.DDGWebView;
 import org.videolan.libvlc.util.AndroidUtil;
 import org.videolan.vlc.BuildConfig;
 import org.videolan.vlc.MediaDatabase;
@@ -63,6 +119,7 @@ import org.videolan.vlc.MediaLibrary;
 import org.videolan.vlc.PlaybackService;
 import org.videolan.vlc.R;
 import org.videolan.vlc.VLCApplication;
+import org.videolan.vlc.dagger.bus.BusProvider;
 import org.videolan.vlc.gui.SidebarAdapter.SidebarEntry;
 import org.videolan.vlc.gui.audio.AudioBrowserFragment;
 import org.videolan.vlc.gui.browser.BaseBrowserFragment;
@@ -78,6 +135,10 @@ import org.videolan.vlc.util.Util;
 import org.videolan.vlc.util.VLCInstance;
 import org.videolan.vlc.util.WeakHandler;
 import org.videolan.vlc.widget.HackyDrawerLayout;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AudioPlayerContainerActivity implements OnItemClickListener, SearchSuggestionsAdapter.SuggestionDisplay, FilterQueryProvider {
     public final static String TAG = "VLC/MainActivity";
@@ -112,11 +173,22 @@ public class MainActivity extends AudioPlayerContainerActivity implements OnItem
     private int mActionBarIconId = -1;
     Menu mMenu;
     private SearchView mSearchView;
+    private SearchView searchView;
+    private List<SearchResult> searchResultList = new ArrayList<>();
+    private SearchResultAdapter adapter;
+    String parsedurl;
+    View duckduckgo;
+    private ServiceManager serviceMain;
+    public String videoId;
+    private boolean keyboardHidden = false;
+    private RelativeLayout mMainFrame;
+    private SlidingTabLayout slidingTabLayout;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        VLCApplication.setVlcMainActivity(this);
         if (!VLCInstance.testCompatibleCPU(this)) {
             finish();
             return;
@@ -143,15 +215,18 @@ public class MainActivity extends AudioPlayerContainerActivity implements OnItem
 
         setContentView(R.layout.main);
 
+        mMainFrame = (RelativeLayout) findViewById(R.id.main_frame);
+
         mDrawerLayout = (HackyDrawerLayout) findViewById(R.id.root_container);
-        mListView = (ListView)findViewById(R.id.sidelist);
+        DDGApplication.setVLCMainFrame(mDrawerLayout);
+        mListView = (ListView) findViewById(R.id.sidelist);
         mListView.setFooterDividersEnabled(true);
         mSidebarAdapter = new SidebarAdapter(this);
         mListView.setAdapter(mSidebarAdapter);
 
         initAudioPlayerContainerActivity();
 
-        if (savedInstanceState != null){
+        if (savedInstanceState != null) {
             mCurrentFragment = savedInstanceState.getString("current");
             if (mCurrentFragment != null)
                 mSidebarAdapter.setCurrentFragment(mCurrentFragment);
@@ -166,9 +241,11 @@ public class MainActivity extends AudioPlayerContainerActivity implements OnItem
         /* Set up the action bar */
         prepareActionBar();
 
+        slidingTabLayout = (SlidingTabLayout) mToolbar.findViewById(R.id.sliding_tabs);
+        DDGApplication.setDDGslidingTabLayout(slidingTabLayout);
         /* Set up the sidebar click listener
          * no need to invalidate menu for now */
-        mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, R.string.drawer_open, R.string.drawer_close){
+        mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, R.string.drawer_open, R.string.drawer_close) {
             @Override
             public void onDrawerClosed(View drawerView) {
                 super.onDrawerClosed(drawerView);
@@ -179,7 +256,7 @@ public class MainActivity extends AudioPlayerContainerActivity implements OnItem
 
         // Set the drawer toggle as the DrawerListener
         mDrawerLayout.setDrawerListener(mDrawerToggle);
-        // set a custom shadow that overlays the main content when the drawer opens
+        // set a custom shadowresmenu that overlays the main content when the drawer opens
         mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
 
         mListView.setOnItemClickListener(this);
@@ -200,6 +277,79 @@ public class MainActivity extends AudioPlayerContainerActivity implements OnItem
 
         /* Reload the latest preferences */
         reloadPreferences();
+
+        setupMenuServices();
+
+        LayoutInflater inflater = getLayoutInflater();
+        View residemenu = inflater.inflate(R.layout.bottommenubar, null);
+        residemenu.setBottom(Gravity.BOTTOM);
+        View residefragment = inflater.inflate(R.layout.residemenuframe, null);
+        //      ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(200,200);
+//        residefragment.setLayoutParams(layoutParams);
+        FrameLayout placeHolderFrame = (FrameLayout) findViewById(R.id.fragment_placeholder);
+        residemenu.setVisibility(View.GONE);
+        placeHolderFrame.addView(residefragment);
+        mMainFrame.addView(residemenu);
+        // todo
+        setUpMenu();
+        hideresidemenuframe();
+
+        adapter = new SearchResultAdapter(this, searchResultList);
+        // QueryTask queryTask = new QueryTask();
+       // queryTask.execute("mellow");
+
+
+        serviceMain.start();
+    }
+
+    public class QueryTask extends AsyncTask<String, Void, SearchListResponse> {
+
+        @Override
+        protected SearchListResponse doInBackground(String... params) {
+            Log.d(String.valueOf(Search.search(params[0])), "SearchListResponse");
+
+            String lYouTubeFmtQuality = "18";
+            videoId = DDGApplication.getSelVideoID();
+
+            if (videoId == null)
+                videoId = "GzI3TRleUkw";
+            try {
+             parsedurl = new UrlParser().calculateYouTubeUrl(lYouTubeFmtQuality, true, videoId);
+            Log.d("ParsedUrl", parsedurl);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            return Search.search(params[0]);
+        }
+
+        @Override
+        protected void onPostExecute(SearchListResponse searchListResponse) {
+            // todo     pb.setVisibility(View.INVISIBLE);
+            Log.d(String.valueOf(searchListResponse), "SearchListResponse PostExecute");
+
+            if (searchListResponse == null)
+                return;
+
+            onQuery(searchListResponse);
+
+            String encodedurl = StringSplitCombine.doreplace(parsedurl);
+            Util.openStream(MainActivity.this, encodedurl);
+            MediaDatabase.getInstance().addMrlhistoryItem(encodedurl);
+
+        }
+    }
+
+    private boolean onQuery(SearchListResponse result) {
+        if (result == null)
+            return false;
+
+        searchResultList.clear();
+        searchResultList.addAll(result.getItems());
+        Log.d(String.valueOf(searchResultList), "Search-Results");
+
+        adapter.notifyDataSetChanged();
+        return true;
     }
 
 
@@ -217,9 +367,10 @@ public class MainActivity extends AudioPlayerContainerActivity implements OnItem
     }
 
     @Override
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
-
+        serviceMain.start();
+        DDGApplication.setServiceMain(serviceMain);
         /* FIXME: this is used to avoid having MainActivity twice in the backstack */
         if (getIntent().hasExtra(PlaybackService.START_FROM_NOTIFICATION))
             getIntent().removeExtra(PlaybackService.START_FROM_NOTIFICATION);
@@ -272,9 +423,9 @@ public class MainActivity extends AudioPlayerContainerActivity implements OnItem
      * Stop audio player and save opened tab
      */
     @Override
-    protected void onPause() {
+    public void onPause() {
         super.onPause();
-
+        serviceMain.stop();
         /* Check for an ongoing scan that needs to be resumed during onResume */
         mScanNeeded = mMediaLibrary.isWorking();
         /* Stop scanning for files */
@@ -296,7 +447,10 @@ public class MainActivity extends AudioPlayerContainerActivity implements OnItem
     protected void onRestart() {
         super.onRestart();
         /* Reload the latest preferences */
+        serviceMain.stop();
         reloadPreferences();
+        serviceMain.start();
+        DDGApplication.setServiceMain(serviceMain);
     }
 
     @Override
@@ -324,7 +478,44 @@ public class MainActivity extends AudioPlayerContainerActivity implements OnItem
                 }
             }
         }
-        finish();
+        if (duckduckgo != null) {
+            if (duckduckgo.getVisibility() == View.VISIBLE) {
+                DDGWebView wv = DDGApplication.getDDGWebView();
+                if (wv != null) {
+                    if (wv.readableBackState) {
+                        wv.readableBackState = false;
+                        if (wv.canGoBack()) {
+                            BusProvider.getInstance().post(new WebViewBackPressActionEvent());
+                            wv.loadingReadableBack = true;
+                            wv.goBack();
+                        }
+                    } else if (!wv.canGoBack()) {
+                        if (((InputMethodManager) VLCApplication.getAppContext().getSystemService(INPUT_METHOD_SERVICE)).isActive()) {
+                            hideKeyboard();
+
+                            // todo duckduckgo.setVisibility(View.GONE);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        Dialog dialog = new Dialog(this);
+        dialog.create();
+        dialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+            @Override
+            public void onCancel(DialogInterface dialog) {
+                return;
+            }
+        });
+        dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialog) {
+                finish();
+            }
+        });
+        dialog.show();
+
     }
 
     private Fragment getFragment(String id)
@@ -337,7 +528,7 @@ public class MainActivity extends AudioPlayerContainerActivity implements OnItem
 
     private static void ShowFragment(FragmentActivity activity, String tag, Fragment fragment, String previous) {
         if (fragment == null) {
-            Log.e(TAG, "Cannot show a null fragment, ShowFragment("+tag+") aborted.");
+            Log.e(TAG, "Cannot show a null fragment, ShowFragment(" + tag + ") aborted.");
             return;
         }
 
@@ -387,6 +578,7 @@ public class MainActivity extends AudioPlayerContainerActivity implements OnItem
          * is called while the view is created. This can happen
          * any time after onCreate.
          */
+
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.media_library, menu);
 
@@ -514,6 +706,12 @@ public class MainActivity extends AudioPlayerContainerActivity implements OnItem
                     break;
                 /* Toggle the sidebar */
                 if (mDrawerToggle.onOptionsItemSelected(item)) {
+                    if (duckduckgo.getVisibility() == View.VISIBLE) {
+                        duckduckgo.setVisibility(View.GONE);
+                        mDrawerLayout.setVisibility(View.VISIBLE);
+                        DDGApplication.getVLCMainToolbar().bringToFront();
+                        break;
+                    }
                     return true;
                 }
                 break;
@@ -747,6 +945,10 @@ public class MainActivity extends AudioPlayerContainerActivity implements OnItem
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        if (duckduckgo != null) {
+            if (duckduckgo.getVisibility() == View.VISIBLE)
+                duckduckgo.setVisibility(View.GONE);
+        }
         SidebarAdapter.SidebarEntry entry = (SidebarEntry) mListView.getItemAtPosition(position);
         Fragment current = getSupportFragmentManager().findFragmentById(R.id.fragment_placeholder);
 
@@ -784,6 +986,8 @@ public class MainActivity extends AudioPlayerContainerActivity implements OnItem
         else if (entry.attributeID == R.attr.ic_menu_preferences)
             startActivityForResult(new Intent(this, PreferencesActivity.class), ACTIVITY_RESULT_PREFERENCES);
         mDrawerLayout.closeDrawer(mListView);
+
+
     }
 
     private void requestFocusOnSearch() {
@@ -791,4 +995,204 @@ public class MainActivity extends AudioPlayerContainerActivity implements OnItem
         if (search != null)
             search.requestFocus();
     }
+
+
+    ////////////////////////////////////////SerbiceMenu
+
+    private void setupMenuServices() {
+        this.serviceMain = new ServiceManager(this, SystemOverlayMenuServiceMainActivity.class, new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                /*if (msg.what == SystemOverlayMenuService.MSG_COUNTER) {
+                    try { service2.send(Message.obtain(null, SystemOverlayMenuServiceTasks.MSG_VALUE, msg.arg1, 0)); }
+                catch (RemoteException e) { }
+                }*/
+                if (msg.what == SystemOverlayMenuServiceMainActivity.MSG_BtnClickMain) {
+                    if (msg.arg1 == 1) {
+
+                    } else if (msg.arg1 == 2) {
+                        duckduckgo.setVisibility(View.GONE);
+
+                    } else if (msg.arg1 == 3) {
+
+                        loadDDGlayout();
+
+                    } else if (msg.arg1 == 4) {
+                        Log.v(TAG, String.valueOf(msg.arg1));
+                        QueryTask queryTask = new QueryTask();
+                        queryTask.execute("mellow");
+
+                    } else if (msg.arg1 == 5) {
+                        WebView.HitTestResult hitTestResult = ((DDGWebView)DDGApplication.getDDGWebView()).getHitTestResult();
+                        String test = String.valueOf(hitTestResult.getExtra());
+                        Log.v(TAG, test);
+                    } else if (msg.arg1 == 6) {
+
+                    } else if (msg.arg1 == 7) {
+                    }
+                    Log.v("ClickBtn @ Service1: ", String.valueOf(msg.arg1));
+
+                } else {
+                    super.handleMessage(msg);
+                }
+            }
+        });
+        DDGApplication.setServiceMain(serviceMain);
+
+    }
+
+    private void loadDDGlayout() {
+        LayoutInflater inflater = getLayoutInflater();
+        // todo
+        if (duckduckgo == null) {
+            duckduckgo = inflater.inflate(R.layout.temp_main, mMainFrame, false);
+            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
+            duckduckgo.setLayoutParams(layoutParams);
+            duckduckgo.setPadding(0, 60, 0, 0);
+            mMainFrame.addView(duckduckgo);
+            inflateLayout();
+            DDGApplication.setDDGMainFrame(duckduckgo);
+            mDrawerLayout.setVisibility(View.GONE);
+            DDGApplication.getVLCMainToolbar().bringToFront();
+        } else {
+            duckduckgo.setVisibility(View.VISIBLE);
+            mDrawerLayout.setVisibility(View.GONE);
+            DDGApplication.getVLCMainToolbar().bringToFront();
+        }
+    }
+
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        //TorIntegrationProvider.getInstance(this).prepareTorSettings();
+        // todo DDGControlVar.mDuckDuckGoContainer.torIntegration.prepareTorSettings();
+        BusProvider.getInstance().register(this);
+        Bus busProvider = BusProvider.getInstance();
+        DDGApplication.setBusProvider(busProvider);
+
+        loadDDGlayout();
+        duckduckgo.setVisibility(View.GONE);
+        mDrawerLayout.bringToFront();
+    }
+
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        //BusProvider.getInstance().unregister(this);
+        Log.d(TAG, "on stop");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        BusProvider.getInstance().unregister(this);
+    }
+
+    ////////////////////////////////////////////////////////////////SubscribersForDDGevents
+
+    @Subscribe
+    public void onDeleteStoryInHistoryEvent(DeleteStoryInHistoryEvent event) {onisDeleteStoryInHistoryEvent(event);//left menu
+    }
+    @Subscribe
+    public void onDeleteUrlInHistoryEvent(DeleteUrlInHistoryEvent event) {onisDeleteUrlInHistoryEvent(event);//left menu
+    }
+    @Subscribe
+    public void onReloadEvent(ReloadEvent event) {
+        onisReloadEvent(event);
+    }
+    @Subscribe
+    public void onSaveSearchEvent(SaveSearchEvent event) {onisSaveSearchEvent(event);
+    }
+    @Subscribe
+    public void onSaveStoryEvent(SaveStoryEvent event) {onisSaveStoryEvent(event);
+    }
+    @Subscribe
+    public void onSendToExternalBrowserEvent(SendToExternalBrowserEvent event) {onisSendToExternalBrowserEvent(event);
+    }
+    @Subscribe
+    public void onSearchExternalEvent(SearchExternalEvent event) {onisSearchExternalEvent(event);
+    }
+    @Subscribe
+    public void onShareFeedEvent(ShareFeedEvent event) {onisShareFeedEvent(event);
+    }
+    @Subscribe
+    public void onShareSearchEvent(ShareSearchEvent event) {onisShareSearchEvent(event);
+    }
+    @Subscribe
+    public void onShareWebPageEvent(ShareWebPageEvent event) {onisShareWebPageEvent(event);//web fragment
+    }
+    @Subscribe
+    public void onUnSaveSearchEvent(UnSaveSearchEvent event) {onisUnSaveSearchEvent(event);
+    }
+    @Subscribe
+    public void onUnSaveStoryEvent(UnSaveStoryEvent event) {onisUnSaveStoryEvent(event);
+    }
+    @Subscribe
+    public void onMainFeedItemLongClick(MainFeedItemLongClickEvent event) {onisMainFeedItemLongClick(event);
+    }
+    @Subscribe
+    public void onSavedFeedItemLongClick(SavedFeedItemLongClickEvent event) {onisSavedFeedItemLongClick(event);    }
+    @Subscribe
+    public void onHistoryItemSelected(HistoryItemSelectedEvent event) {onisHistoryItemSelected(event);
+    }
+    @Subscribe
+    public void onHistoryItemLongClick(HistoryItemLongClickEvent event) {onisHistoryItemLongClick(event);
+    }
+    @Subscribe
+    public void onSavedSearchItemSelected(SavedSearchItemSelectedEvent event) {onisSavedSearchItemSelected(event);
+    }
+    @Subscribe
+    public void onSavedSearchItemLongClick(SavedSearchItemLongClickEvent event) {onisSavedSearchItemLongClick(event);
+    }
+    @Subscribe
+    public void onRecentSearchPaste(RecentSearchPasteEvent event) {onisRecentSearchPaste(event);
+    }
+    @Subscribe
+    public void onSuggestionPaste(SuggestionPasteEvent event) {onisSuggestionPaste(event);
+    }
+    @Subscribe
+    public void onDisplayScreenEvent(DisplayScreenEvent event) {onisDisplayScreenEvent(event);
+    }
+    @Subscribe
+    public void onSearchBarClearEvent(SearchBarClearEvent event) {onisSearchBarClearEvent(event);
+    }
+    @Subscribe
+    public void onSearchBarSetTextEvent(SearchBarSetTextEvent event) {onisSearchBarSetTextEvent(event);
+    }
+    @Subscribe
+    public void onSearchBarSetProgressEvent(SearchBarSetProgressEvent event) {onisSearchBarSetProgressEvent(event);
+    }
+    @Subscribe
+    public void onRequestOpenWebPageEvent(RequestOpenWebPageEvent event) {onisRequestOpenWebPageEvent(event);
+    }
+    @Subscribe
+    public void onStopActionEvent(StopActionEvent event) {onisStopActionEvent(event);
+    }
+    @Subscribe
+    public void onRequestSyncAdaptersEvent(RequestSyncAdaptersEvent event) {onisRequestSyncAdaptersEvent(event);
+    }
+    @Subscribe
+    public void onConfirmDialogOkEvent(ConfirmDialogOkEvent event) {onisConfirmDialogOkEvent(event);
+    }
+    @Subscribe
+    public void onRemoveWebFragmentEvent(RemoveWebFragmentEvent event) {onisRemoveWebFragmentEvent(event);//Log.e("aaa", "remove web fragment");
+    }
+    @Subscribe
+    public void onSearchBarChangeEvent(SearchBarChangeEvent event) {
+        //changeSearchBar(event.screen);
+    }
+    @Subscribe
+    public void onDisplayHomeScreenEvent(DisplayHomeScreenEvent event) {onisDisplayHomeScreenEvent(event);
+    }
+    @Subscribe
+    public void onAutoCompleteResultClickEvent(AutoCompleteResultClickEvent event) {onisAutoCompleteResultClickEvent(event);
+    }
+    @Subscribe
+    public void onWebViewItemMenuClickEvent(WebViewItemMenuClickEvent event) {onisWebViewItemMenuClickEvent(event);
+    }
+
+
+
 }

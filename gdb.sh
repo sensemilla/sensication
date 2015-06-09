@@ -41,6 +41,8 @@ if [ ! -z "$APK_PATH" ]; then
         exit 1
     fi
 
+ANDROID_NDK="/Users/sensemilla/android-ndk-r10e"
+ANDROID_SDK="/Users/sensemilla/sdk"
     aapt=$(ls -1 --sort=time $ANDROID_SDK/build-tools/*/aapt|head -n 1)
     if [ -z "$aapt" ];then
         echo "aapt not found in \$ANDROID_SDK"
@@ -93,5 +95,7 @@ echo "APP_ABI := all" > "$TMP_PATH"/jni/Application.mk
 
 cp "$ANDROID_MANIFEST" "$TMP_PATH"
 
+ANDROID_NDK="/Users/sensemilla/android-ndk-r10e"
+ANDROID_SDK="/Users/sensemilla/sdk"
 (cd "$TMP_PATH" && bash $ANDROID_NDK/ndk-gdb $NDK_GDB_ARGS)
 #(cd "$TMP_PATH" && bash $ANDROID_NDK/ndk-gdb-py $NDK_GDB_ARGS)

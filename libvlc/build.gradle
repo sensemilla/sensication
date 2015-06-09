@@ -1,8 +1,18 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion rootProject.ext.compileSdkVersion
-    buildToolsVersion rootProject.ext.buildToolsVersion
+
+    lintOptions {
+        abortOnError false
+    }
+
+    compileSdkVersion parent.ext.androidCompileSdkVersion
+    buildToolsVersion parent.ext.androidBuildToolsVersion
+
+    defaultConfig {
+        minSdkVersion parent.ext.androidMinSdkVersion
+        targetSdkVersion parent.ext.androidTargetSdkVersion
+    }
 
     sourceSets {
     main {
@@ -16,12 +26,8 @@ android {
         res.srcDirs = ['res']
         assets.srcDirs = ['assets']
     }
-    }
+}
 
-    defaultConfig {
-        minSdkVersion 7
-        targetSdkVersion 22
-    }
 
     buildTypes {
         release {
@@ -87,4 +93,38 @@ task buildDebugMIPS(type:BuildNative) {
 }
 task buildDebugMIPS64(type:BuildNative) {
     args('-a', "mips64")
+}
+
+
+
+
+apply plugin: 'maven'
+group = 'org.sensi'
+version = '0.1'
+
+archivesBaseName = 'sensicationlibvlclibrary'
+
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository url: 'file://' + new File(System.getProperty('user.home'), '.m2/repository').absolutePath
+        }
+    }
+}
+task install(dependsOn: uploadArchives)
+
+//...
+//...
+task ressourcesJar(type: Jar) {
+    classifier = 'res'
+    from android.sourceSets.main.res.sourceFiles
+}
+task javasourcesJar(type: Jar) {
+    classifier = 'java'
+    from android.sourceSets.main.java.sourceFiles
+}
+artifacts {
+    archives ressourcesJar
+    archives javasourcesJar
 }

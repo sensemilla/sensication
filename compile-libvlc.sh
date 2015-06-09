@@ -43,6 +43,8 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+ANDROID_NDK="/Users/sensemilla/android-ndk-r10e"
+ANDROID_SDK="/Users/sensemilla/sdk"
 if [ -z "$ANDROID_NDK" ]; then
     echo "Please set the ANDROID_NDK environment variable with its path."
     exit 1

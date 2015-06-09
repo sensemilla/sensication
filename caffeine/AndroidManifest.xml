@@ -1,0 +1,33 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.percolate">
+    <uses-permission android:name="android.permission.READ_LOGS" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <uses-permission android:name="android.permission.SYSTEM_OVERLAY_WINDOW" />
+
+    <uses-sdk android:minSdkVersion="21"/>
+
+    <application
+        android:allowBackup="true">
+
+        <activity
+            android:name=".youtube.ui.search.YouTubeActivity"
+            android:label="@string/fragment_search">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".youtube.ui.play.PlayVideoUsingYouTuBeActivity" />
+
+        <activity android:name=".youtube.ui.play.PlayVideoUsingVideoViewActivity" />
+
+
+        <service
+            android:name=".service.SystemOverlayMenuServiceMainActivity"
+            android:enabled="true"
+            android:exported="true" >
+        </service>
+
+    </application>
+</manifest>

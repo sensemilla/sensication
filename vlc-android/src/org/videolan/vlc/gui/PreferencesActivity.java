@@ -50,7 +50,6 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 
 import org.videolan.libvlc.util.HWDecoderUtil;
-import org.videolan.libvlc.LibVLC;
 import org.videolan.vlc.MediaDatabase;
 import org.videolan.vlc.PlaybackService;
 import org.videolan.vlc.PlaybackServiceController;
@@ -299,7 +298,7 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
             LinearLayout root = (LinearLayout) getListView().getParent().getParent().getParent();
-            bar = (Toolbar) LayoutInflater.from(this).inflate(R.layout.toolbar, root, false);
+            bar = (Toolbar) LayoutInflater.from(this).inflate(R.layout.vlctoolbar, root, false);
             root.addView(bar, 0); // insert at top
         } else {
             ViewGroup root = (ViewGroup) findViewById(android.R.id.content);
@@ -309,7 +308,7 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 
             root.removeAllViews();
 
-            bar = (Toolbar) LayoutInflater.from(this).inflate(R.layout.toolbar, root, false);
+            bar = (Toolbar) LayoutInflater.from(this).inflate(R.layout.vlctoolbar, root, false);
             root.addView(bar);
 
             int height;

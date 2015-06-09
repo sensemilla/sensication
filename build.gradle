@@ -1,22 +1,102 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
 buildscript {
     repositories {
-        jcenter()
+        mavenCentral()
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:1.2.3'
-        classpath 'com.jakewharton.sdkmanager:gradle-plugin:0.12.+'
+        classpath 'com.neenbedankt.gradle.plugins:android-apt:1.4'
+        classpath 'com.jakewharton.sdkmanager:gradle-plugin:0.12.0'
+        classpath 'com.neenbedankt.gradle.plugins:android-apt:1.4'
+
+
     }
+
 }
+
 
 allprojects {
     repositories {
         jcenter()
     }
+
     apply plugin: 'android-sdk-manager'
+
+    ext {
+        // Android config
+        androidCompileSdkVersion = 22
+        androidBuildToolsVersion = "22.0.1"
+        androidMinSdkVersion = 21
+        androidTargetSdkVersion = 22
+        androidApplicationId = 'org.sense.sensi'
+        androidVersionCode = 1
+        androidVersionName = '1.0'
+
+        // Libraries
+        libButterknife = 'com.jakewharton:butterknife:6.1.0'
+        libDagger = 'com.google.dagger:dagger:2.0'
+        libDaggerCompiler = 'com.google.dagger:dagger-compiler:2.0'
+        libAnnotations = 'org.glassfish:javax.annotation:10.0-b28'
+
+        libV4support = 'com.android.support:support-v4:22.2.0'
+        libAppCompat = 'com.android.support:appcompat-v7:22.2.0'
+        libV13support = 'com.android.support:support-v13:22.2.0'
+        libv4fragpref = project(':android-support-v4-preferencefragment')
+
+        libnetcipher = project(':libnetcipher')
+        libotr4j = project(':otr4j')
+
+        libFab = 'com.melnykov:floatingactionbutton:1.2.0'
+        libRecyclerView = 'com.android.support:recyclerview-v7:22.2.0'
+        libCardView = 'com.android.support:cardview-v7:22.2.0'
+        libGlide = 'com.github.bumptech.glide:glide:3.5.2'
+        libnineoldandroids = 'com.nineoldandroids:library:2.4.0'
+        libScala = 'org.scala-saddle:google-rfc-2445:20110304'
+        libOtto = 'com.squareup:otto:1.3.4'
+
+        // libplayservices = 'com.google.android.gms:play-services:3.2.25@aar'
+        libEventBus = 'de.greenrobot:eventbus:2.4.0'
+        libyouapiservice = 'com.google.apis:google-api-services-youtube:v3-rev138-1.20.0'
+        libgmail = 'com.google.apis:google-api-services-gmail:v1-rev29-1.20.0'
+        libapiclient = 'com.google.api-client:google-api-client:1.20.0'
+        libapiclientandroid = 'com.google.api-client:google-api-client-android:1.20.0'
+        libgson = 'com.google.api-client:google-api-client-gson:1.20.0'
+        libgplay = 'com.google.android.gms:play-services:7.0.0'
+        libpicasso = 'com.squareup.picasso:picasso:2.5.2'
+        libhtmlcleaner = 'net.sourceforge.htmlcleaner:htmlcleaner:2.12'
+
+        libandrotations = "org.androidannotations:androidannotations-api:3.2"
+        libsmoothprogress = 'com.github.castorflex.smoothprogressbar:library:1.0.0'
+        libuniimageloader = 'com.nostra13.universalimageloader:universal-image-loader:1.9.3'
+        libhttpandroid = 'com.google.http-client:google-http-client-android:1.20.0'
+        libhttpclient = 'com.google.http-client:google-http-client:1.20.0'
+
+        libcaffeine = project(':caffeine')
+
+        libresideMenu = project(':resideMenulib')
+        libduckduckgo = project(':duckduckgolib')
+
+        libslidinglayer = project(':slidinglayerlib')
+        libvlc = project(':libvlc')
+        libvlcmain = project(':vlc-android')
+        libdraggablepanel = project(':draggablepanel')
+
+        libxabber = project(':xabberlib')
+
+
+        libcollect = 'com.google.guava:guava:18.0'
+
+
+
+    }
+
+    repositories {
+        jcenter()
+        mavenCentral()
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+
+    }
+
 }
 
-ext {
-    buildToolsVersion = "22.0.1"
-    compileSdkVersion = 22
-}

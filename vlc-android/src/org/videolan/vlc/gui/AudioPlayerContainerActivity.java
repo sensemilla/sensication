@@ -31,22 +31,24 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.android.widget.SlidingPaneLayout;
+import com.special.ResideMenu.ResideMenuActivity;
+
+import org.sense.duckduckgo.DDGApplication;
 import org.videolan.vlc.BuildConfig;
 import org.videolan.vlc.PlaybackServiceController;
 import org.videolan.vlc.R;
 import org.videolan.vlc.gui.audio.AudioPlayer;
 import org.videolan.vlc.util.Util;
 import org.videolan.vlc.widget.HackyDrawerLayout;
-import com.android.widget.SlidingPaneLayout;
 
-public class AudioPlayerContainerActivity extends AppCompatActivity {
+public class AudioPlayerContainerActivity extends ResideMenuActivity {
 
     public static final String ACTION_SHOW_PLAYER = "org.videolan.vlc.gui.ShowPlayer";
 
@@ -60,7 +62,7 @@ public class AudioPlayerContainerActivity extends AppCompatActivity {
     protected ViewGroup mRootContainer;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         /* Get settings */
         mSettings = PreferenceManager.getDefaultSharedPreferences(this);
         /* Theme must be applied before super.onCreate */
@@ -74,6 +76,7 @@ public class AudioPlayerContainerActivity extends AppCompatActivity {
                 .findViewById(android.R.id.content)).getChildAt(0);
         mToolbar = (Toolbar) findViewById(R.id.main_toolbar);
         setSupportActionBar(mToolbar);
+        DDGApplication.setVLCMainToolbar(mToolbar);
         mActionBar = getSupportActionBar();
 
         mSlidingPane = (SlidingPaneLayout) findViewById(R.id.pane);
@@ -109,14 +112,14 @@ public class AudioPlayerContainerActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
         mAudioController.addAudioPlayer(mAudioPlayer);
         PlaybackServiceController.getInstance().bindAudioService(this);
     }
 
     @Override
-    protected void onPause() {
+    public void onPause() {
         super.onPause();
         mAudioController.removeAudioPlayer(mAudioPlayer);
         PlaybackServiceController.getInstance().unbindAudioService(this);

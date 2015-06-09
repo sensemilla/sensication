@@ -31,6 +31,6 @@
 
     <!-- Default -->
     <dimen name="default_margin">16dp</dimen>
-    <dimen name="actionBarSize">56dp</dimen>
+    <dimen name="actionBarSize">68dp</dimen>
 
 </resources>

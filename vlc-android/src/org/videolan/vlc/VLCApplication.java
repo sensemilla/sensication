@@ -19,21 +19,23 @@
  *****************************************************************************/
 package org.videolan.vlc;
 
-import java.util.Calendar;
-import java.util.Locale;
-
-import org.videolan.vlc.gui.audio.AudioUtil;
-import org.videolan.vlc.util.BitmapCache;
-
-import android.app.Application;
+import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
-import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.SurfaceHolder;
 
-public class VLCApplication extends Application {
+import org.sense.duckduckgo.DDGApplication;
+import org.videolan.vlc.dagger.VlcApp;
+import org.videolan.vlc.gui.audio.AudioUtil;
+import org.videolan.vlc.util.BitmapCache;
+
+import java.util.Calendar;
+import java.util.Locale;
+
+public class VLCApplication extends VlcApp {
     public final static String TAG = "VLC/VLCApplication";
     private static VLCApplication instance;
 
@@ -42,13 +44,31 @@ public class VLCApplication extends Application {
     public final static String CALL_ENDED_INTENT = "org.videolan.vlc.CallEndedIntent";
 
     public static Calendar sPlayerSleepTime = null;
+    public static boolean tv = false;
+    private static Activity vlcMainActivity;
+    private static SurfaceHolder.Callback surfaceCallback;
+    private static SurfaceHolder.Callback subtitlesSurfaceCallback;
+
+    public static Activity getVlcMainActivity() {
+        return vlcMainActivity;
+    }
+
+    public static SurfaceHolder.Callback getSurfaceCallback() {
+        return surfaceCallback;
+    }
+
+    public static SurfaceHolder.Callback getSubtitlesSurfaceCallback() {
+        return subtitlesSurfaceCallback;
+    }
+
+    public SharedPreferences pref;
 
     @Override
     public void onCreate() {
         super.onCreate();
 
         // Are we using advanced debugging - locale?
-        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+        pref = DDGApplication.getSharedPreferences(); // todo PreferenceManager.getDefaultSharedPreferences(this);
         String p = pref.getString("set_locale", "");
         if (p != null && !p.equals("")) {
             Locale locale;
@@ -111,5 +131,9 @@ public class VLCApplication extends Application {
     public static Resources getAppResources()
     {
         return instance.getResources();
+    }
+
+    public static void setVlcMainActivity(Activity mainActivity) {
+        VLCApplication.vlcMainActivity = mainActivity;
     }
 }

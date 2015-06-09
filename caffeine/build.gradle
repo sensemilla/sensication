@@ -1,0 +1,44 @@
+apply plugin: 'com.android.library'
+apply plugin: 'android-apt'
+
+
+dependencies {
+   // apt "org.androidannotations:androidannotations:3.2"
+    compile parent.ext.libDagger
+    compile parent.ext.libDaggerCompiler
+    compile parent.ext.libAnnotations
+    //compile parent.ext.libandrotations
+    compile parent.ext.libOtto
+    compile parent.ext.libuniimageloader
+    compile parent.ext.libAppCompat
+    compile parent.ext.libyouapiservice
+    compile parent.ext.libhttpandroid
+    compile parent.ext.libhttpclient
+    compile parent.ext.libapiclient
+    compile parent.ext.libsmoothprogress
+    compile files('libs/YouTubeAndroidPlayerApi.jar')
+}
+
+
+android {
+    compileSdkVersion parent.ext.androidCompileSdkVersion
+    buildToolsVersion parent.ext.androidBuildToolsVersion
+
+    defaultConfig {
+        minSdkVersion parent.ext.androidMinSdkVersion
+        targetSdkVersion parent.ext.androidTargetSdkVersion
+    }
+
+  //  enforceUniquePackageName = false
+
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = ['src/main/java']
+            res.srcDirs = ['res']
+        }
+    }
+
+}
+

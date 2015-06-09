@@ -128,7 +128,7 @@ public class AudioPlaylistView extends ListView {
 
         if (mIsDragging) {
             canvas.save();
-            // Position the drag shadow.
+            // Position the drag shadowresmenu.
             float posY = mTouchY - (float)mDragShadow.getMeasuredHeight() / 2f;
             canvas.translate(0, posY);
             mDragShadow.draw(canvas);

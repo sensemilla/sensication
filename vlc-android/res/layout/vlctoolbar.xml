@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v7.widget.Toolbar
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main_toolbar"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:navigationContentDescription="@string/abc_action_bar_up_description"
+    app:theme="@style/Toolbar.VLC"
+    app:popupTheme="?attr/toolbar_popup_style"
+    android:background="?attr/background_actionbar"
+    app:navigationIcon="?attr/homeAsUpIndicator"
+    app:titleMarginStart="@dimen/default_margin">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+    <org.sense.duckduckgo.views.SlidingTabLayout
+        android:visibility="visible"
+        android:id="@+id/sliding_tabs"
+        android:layout_width="match_parent"
+        android:layout_height="46dp"
+        android:background="@color/orange500transparent"
+        android:layout_marginStart="6dp"
+        android:layout_marginTop="56dp" />
+
+    <include android:id="@+id/toolbar" layout="@layout/temp_actionbar" />
+
+    </FrameLayout>
+
+
+    </android.support.v7.widget.Toolbar>

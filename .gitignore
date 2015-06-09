@@ -44,3 +44,7 @@ build/
 vlc-android/build/
 java-libs/WheelView/build/
 libVLC/build/
+
+build
+arcmenulib/build
+duckduckgolib/build
